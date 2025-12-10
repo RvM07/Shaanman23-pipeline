@@ -5,7 +5,7 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/RvM07/Shaanman23-pipeline.git'
+                git 'https://github.com/RvM07/Shaanman23-pipeline.git'
             }
         }
 
@@ -13,49 +13,38 @@ pipeline {
             steps {
                 script {
                     echo "Building Flask Docker Image..."
-                    bat "docker build -t myflaskapp:latest ."
+                    sh 'docker build -t flaskapp .'
                 }
             }
         }
 
         stage('Stop Old Container') {
             steps {
-                script {
-                    echo "Stopping old container if exists..."
-                    bat "docker stop flaskdemo || exit 0"
-                    bat "docker rm flaskdemo || exit 0"
-                }
+                sh '''
+                if docker ps -q --filter "name=flaskapp-container"; then
+                    docker stop flaskapp-container || true
+                    docker rm flaskapp-container || true
+                fi
+                '''
             }
         }
 
         stage('Run New Container') {
             steps {
-                script {
-                    echo "Running new container on port 5000..."
-                    bat "docker run -d --name flaskdemo -p 5000:5000 myflaskapp:latest"
-                }
+                sh 'docker run -d -p 5000:5000 --name flaskapp-container flaskapp'
             }
         }
 
         stage('Test Application') {
             steps {
-                script {
-                    echo "Waiting for app to start..."
-                    sleep(5)
-
-                    echo "Testing application on port 5000..."
-                    bat "curl http://localhost:5000"
-                }
+                sh 'curl -f http://localhost:5000'
             }
         }
 
         stage('Deploy Success') {
             steps {
-                echo "Flask App is running successfully at: http://localhost:5000"
+                echo "Deployment Completed Successfully!"
             }
         }
     }
 }
-
-
-
